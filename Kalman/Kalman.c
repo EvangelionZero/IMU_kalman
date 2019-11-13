@@ -75,20 +75,30 @@ void kalman_angle_filter()
 //    //rad
     alpha = -atan(accel_X/accel_Z);// - 0.004;//負號代表方向?
     beta1 =  atan(accel_Y/accel_Z);// + 0.007;
-	gamma =  atan(accel_Y/accel_X);
 	alpha_deg = alpha*rad_to_deg;
     beta1_deg = beta1*rad_to_deg;
-	gamma_deg = beta1*rad_to_deg;
     
 	alpha_kalman_deg = alpha_kalman*rad_to_deg;
     beta1_kalman_deg = beta1_kalman*rad_to_deg;
     gamma_kalman_deg = gamma_kalman*rad_to_deg;
 
+
+	// --- calculate bearing angle from compass --------------------
+    temp1 = magn_Z*sin_beta1-magn_Y*cos_beta1;
+    temp2 = magn_X*cos_alpha+magn_Y*sin_alpha*sin_beta1+magn_Z*sin_alpha*cos_beta1;
+    gamma_measure = atan(temp1/temp2);
+	gamma_deg = gamma_measure*rad_to_deg;
+    if(temp2>0)
+        gamma = gamma_measure;
+    else if(temp1>0)
+        gamma = gamma_measure+pi;
+    else
+        gamma = gamma_measure-pi;
 		
     //kalman beta1
     //beta1_kalman=beta1_kalman + sample_time*(beta1_dot - beta1_bias);    // project the state ahead
 //    beta1_bias = 0;
-    beta1_kalman=beta1_kalman + sample_time*(X_gyro - beta1_bias);
+    beta1_kalman=beta1_kalman + sample_time*(gyro_X - beta1_bias);
     P_beta1_00= P_beta1_00-sample_time*P_beta1_10-sample_time*P_beta1_01+sample_time*sample_time*P_beta1_11+Q_beta1_angle*sample_time;   //project the error covariance ahead
     P_beta1_01= P_beta1_01-P_beta1_11*sample_time;       //project the error covariance ahead
     P_beta1_10= P_beta1_10-P_beta1_11*sample_time;       //project the error covariance ahead
@@ -107,7 +117,7 @@ void kalman_angle_filter()
     //kalman alpha
     //alpha_kalman=alpha_kalman + sample_time*(alpha_dot - alpha_bias);    // project the state ahead
 
-    alpha_kalman=alpha_kalman + sample_time*(Y_gyro - alpha_bias);    // project the state ahead
+    alpha_kalman=alpha_kalman + sample_time*(gyro_Y - alpha_bias);    // project the state ahead
     P_alpha_00= P_alpha_00-sample_time*P_alpha_10-sample_time*P_alpha_01+sample_time*sample_time*P_alpha_11+Q_alpha_angle*sample_time;   //project the error covariance ahead
     P_alpha_01= P_alpha_01-P_alpha_11*sample_time;    //project the error covariance ahead
     P_alpha_10= P_alpha_10-P_alpha_11*sample_time;    //project the error covariance ahead
@@ -127,7 +137,7 @@ void kalman_angle_filter()
 
 
     //kalman gamma
-    gamma_kalman=gamma_kalman + sample_time*(Y_gyro - gamma_bias);    // project the state ahead
+    gamma_kalman=gamma_kalman + sample_time*(gyro_Y - gamma_bias);    // project the state ahead
     P_gamma_00= P_gamma_00-sample_time*P_gamma_10-sample_time*P_gamma_01+sample_time*sample_time*P_gamma_11+Q_gamma_angle*sample_time;   //project the error covariance ahead
     P_gamma_01= P_gamma_01-P_gamma_11*sample_time;    //project the error covariance ahead
     P_gamma_10= P_gamma_10-P_gamma_11*sample_time;    //project the error covariance ahead
